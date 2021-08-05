@@ -4,6 +4,7 @@ const {
   AuthenticationError,
   ForbiddenError
 } = require('apollo-server-express');
+const mongoose = require('mongoose');
 require('dotenv').config();
 
 module.exports = {
@@ -42,7 +43,7 @@ module.exports = {
 
     // busca a nota
     const nota = await modelos.Nota.findById(id);
-    // if the note owner and current user don't match, throw a forbidden error
+    // if the note owner and current usuario don't match, throw a forbidden error
     if (nota && String(nota.autor) !== usuario.id) {
       throw new ForbiddenError("Você não tem permissão para atualizar a nota");
     }
@@ -86,11 +87,11 @@ module.exports = {
       email = email.trim().toLowerCase();
     }
 
-    const usuario = await models.User.findOne({
-      or: [{ email }, { username }]
+    const usuario = await modelos.Usuario.findOne({
+      or: [{ email }, { nomeUsuario }]
     });
 
-    // if no user is found, throw an authentication error
+    // if no usuario is found, throw an authentication error
     if (!usuario) {
       throw new AuthenticationError('Error ao entrar.');
     }
@@ -111,7 +112,7 @@ module.exports = {
 
     // verifica se o usuario ja favoritou a nota
     let notaCheck = await modelos.Note.findById(id);
-    const temUsuario = notaCheck.favoritedBy.indexOf(user.id);
+    const temUsuario = notaCheck.favoritedBy.indexOf(usuario.id);
 
     // se o usuario já favoritou, retira da lista e 
     // decrementa o contadorFavorito em 1
@@ -120,7 +121,7 @@ module.exports = {
         id,
         {
           pull: {
-            favoritadoPor: mongoose.Types.ObjectId(user.id)
+            favoritadoPor: mongoose.Types.ObjectId(usuario.id)
           },
           inc: {
             contadorFavorito: -1
@@ -136,7 +137,7 @@ module.exports = {
         id,
         {
           push: {
-            favoritadoPor: mongoose.Types.ObjectId(user.id)
+            favoritadoPor: mongoose.Types.ObjectId(usuario.id)
           },
           inc: {
             contadorFavorito: 1

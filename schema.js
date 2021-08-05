@@ -33,6 +33,6 @@ module.exports = gql`
     excluiNota(id: ID!): Boolean!
     alternarFavorito(id: ID!): Nota!
     inscrever(nomeUsuario: String!, email: String!, senha: String!): String!
-    entrar(nomeUsuario: String, email: String, password: String!): String!
+    entrar(nomeUsuario: String, email: String, senha: String!): String!
   }
 `;
