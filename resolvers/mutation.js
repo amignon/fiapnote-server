@@ -15,7 +15,7 @@ module.exports = {
     return await modelos.Nota.create({
       conteudo: args.conteudo,
       autor: mongoose.Types.ObjectId(usuario.id),
-      favoritadoPor: 0
+      contadorFavorito: 0
     });
   },
   excluiNota: async (parent, { id }, { modelos, usuario }) => {
@@ -25,6 +25,7 @@ module.exports = {
 
     // busca a nota
     const nota = await modelos.Nota.findById(id);
+    // se não é o autor da nota, retorna erro
     if (nota && String(nota.autor) !== usuario.id) {
       throw new ForbiddenError("Você não tem permissão para excluir a nota");
     }
@@ -38,12 +39,12 @@ module.exports = {
   },
   atualizaNota: async (parent, { conteudo, id }, { modelos, usuario }) => {
     if (!usuario) {
-      throw new AuthenticationError('Você precisa estar logado para excluir uma nota.');
+      throw new AuthenticationError('Você precisa estar logado para atualizar uma nota.');
     }
 
     // busca a nota
     const nota = await modelos.Nota.findById(id);
-    // if the note owner and current usuario don't match, throw a forbidden error
+    // se não é o autor da nota, retorna erro
     if (nota && String(nota.autor) !== usuario.id) {
       throw new ForbiddenError("Você não tem permissão para atualizar a nota");
     }
@@ -53,7 +54,7 @@ module.exports = {
           _id: id
         },
         {
-          set: {
+          $set: {
             conteudo
           }
         },
@@ -86,19 +87,16 @@ module.exports = {
     if (email) {
       email = email.trim().toLowerCase();
     }
-
     const usuario = await modelos.Usuario.findOne({
-      or: [{ email }, { nomeUsuario }]
+      $or: [ { email } ,  { nomeUsuario }]
     });
-
-    // if no usuario is found, throw an authentication error
+    // se não encontrou o usuário, retorna erro.
     if (!usuario) {
       throw new AuthenticationError('Error ao entrar.');
     }
-
     // se as senhas não combinam
-    const valid = await bcrypt.compare(senha, usuario.senha);
-    if (!valid) {
+    const valido = await bcrypt.compare(senha, usuario.senha);
+    if (!valido) {
       throw new AuthenticationError('Senha Inválida');
     }
 
@@ -111,8 +109,9 @@ module.exports = {
     }
 
     // verifica se o usuario ja favoritou a nota
-    let notaCheck = await modelos.Note.findById(id);
-    const temUsuario = notaCheck.favoritedBy.indexOf(usuario.id);
+    let notaCheck = await modelos.Nota.findById(id);
+    console.log(notaCheck)
+    const temUsuario = notaCheck.favoritadoPor.indexOf(usuario.id);
 
     // se o usuario já favoritou, retira da lista e 
     // decrementa o contadorFavorito em 1
@@ -120,10 +119,10 @@ module.exports = {
       return await modelos.Nota.findByIdAndUpdate(
         id,
         {
-          pull: {
+          $pull: {
             favoritadoPor: mongoose.Types.ObjectId(usuario.id)
           },
-          inc: {
+          $inc: {
             contadorFavorito: -1
           }
         },
@@ -136,10 +135,10 @@ module.exports = {
       return await modelos.Nota.findByIdAndUpdate(
         id,
         {
-          push: {
+          $push: {
             favoritadoPor: mongoose.Types.ObjectId(usuario.id)
           },
-          inc: {
+          $inc: {
             contadorFavorito: 1
           }
         },
